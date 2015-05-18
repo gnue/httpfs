@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 )
 
 type File struct {
@@ -133,8 +132,7 @@ func (f *File) newReader() (*bytes.Reader, error) {
 	return f.cache.r, nil
 }
 
-func (f *File) addFile(zf *zip.File) {
-	fn := strings.Trim(zf.FileHeader.Name, "/")
+func (f *File) addFile(fn string, zf *zip.File) {
 	fname := path.Base(fn)
 
 	if f.files[fname] == nil {

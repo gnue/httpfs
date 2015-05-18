@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"sort"
 	"strings"
 )
 
@@ -17,6 +16,7 @@ type ZipFS struct {
 }
 
 type Options struct {
+	Prefix string
 	Ignore []string
 }
 
@@ -34,17 +34,12 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 	}
 
 	// ignore files
-	ignore := make([]string, len(opts.Ignore))
-	copy(ignore, opts.Ignore)
-	sort.Strings(ignore)
+	ig := NewIgnore(opts.Ignore)
 
-	isIgnore := func(name string) bool {
-		i := sort.SearchStrings(ignore, name)
-		if i < len(ignore) && ignore[i] == name {
-			return true
-		}
-
-		return false
+	// prefix
+	prefix := opts.Prefix
+	if 0 < len(prefix) {
+		prefix = strings.Trim(prefix, "/") + "/"
 	}
 
 	// root directory
@@ -57,21 +52,39 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 		fi := f.FileHeader.FileInfo()
 		fn := strings.Trim(f.FileHeader.Name, "/")
 
-		if isIgnore(path.Base(fn)) {
+		// prefix check
+		if 0 < len(prefix) {
+			if !strings.HasPrefix(fn, prefix) {
+				continue
+			}
+			fn = strings.TrimPrefix(fn, prefix)
+			fn = strings.Trim(fn, "/")
+		}
+
+		// ignore file
+		if ig.Match(path.Base(fn)) {
 			continue
 		}
 
 		if fi.IsDir() {
+			if fn == "" {
+				fn = "."
+			}
+
 			dirs[fn] = &File{
 				fi:    fi,
 				files: make(map[string]*zip.File, 0),
+			}
+
+			if fn == "." {
+				continue
 			}
 		}
 
 		dn := path.Dir(fn)
 		d := dirs[dn]
 		if d == nil {
-			if isIgnore(path.Base(dn)) {
+			if ig.Match(path.Base(dn)) {
 				continue
 			}
 
@@ -79,7 +92,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 			log.Printf("zipfs: not found directory info '%s'", dn)
 			continue
 		}
-		d.addFile(f)
+		d.addFile(fn, f)
 	}
 
 	z = &ZipFS{Filename: name, rc: rc, dirs: dirs}
