@@ -1,24 +1,16 @@
 package zipfs
 
 import (
-	"sort"
+	"regexp"
+	"strings"
 )
 
-type Ignore []string
+func NewIgnore(pattern []string) (*regexp.Regexp, error) {
+	a := make([]string, 0, len(pattern))
 
-func NewIgnore(pattern []string) Ignore {
-	ig := make([]string, len(pattern))
-	copy(ig, pattern)
-	sort.Strings(ig)
-
-	return ig
-}
-
-func (ig Ignore) Match(name string) bool {
-	i := sort.SearchStrings(ig, name)
-	if i < len(ig) && ig[i] == name {
-		return true
+	for _, s := range pattern {
+		a = append(a, regexp.QuoteMeta(s))
 	}
 
-	return false
+	return regexp.Compile("(^|/)(" + strings.Join(a, "|") + ")(/|$)")
 }

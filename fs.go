@@ -34,7 +34,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 	}
 
 	// ignore files
-	ig := NewIgnore(opts.Ignore)
+	ig, _ := NewIgnore(opts.Ignore)
 
 	// prefix
 	prefix := opts.Prefix
@@ -62,7 +62,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 		}
 
 		// ignore file
-		if ig.Match(path.Base(fn)) {
+		if ig != nil && ig.MatchString(fn) {
 			continue
 		}
 
@@ -84,10 +84,6 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 		dn := path.Dir(fn)
 		d := dirs[dn]
 		if d == nil {
-			if ig.Match(path.Base(dn)) {
-				continue
-			}
-
 			// TODO: エラー処理
 			log.Printf("zipfs: not found directory info '%s'", dn)
 			continue
