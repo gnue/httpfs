@@ -12,5 +12,5 @@ func NewIgnore(pattern []string) (*regexp.Regexp, error) {
 		a = append(a, regexp.QuoteMeta(s))
 	}
 
-	return regexp.Compile("(^|/)(" + strings.Join(a, "|") + ")(/|$)")
+	return regexp.Compile("(?i)(^|/)(" + strings.Join(a, "|") + ")(/|$)")
 }

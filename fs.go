@@ -39,6 +39,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 	// prefix
 	prefix := opts.Prefix
 	if 0 < len(prefix) {
+		prefix = strings.ToLower(prefix)
 		prefix = strings.Trim(prefix, "/") + "/"
 	}
 
@@ -51,6 +52,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 	for _, f := range rc.File {
 		fi := f.FileHeader.FileInfo()
 		fn := strings.Trim(f.FileHeader.Name, "/")
+		fn = strings.ToLower(fn)
 
 		// prefix check
 		if 0 < len(prefix) {
@@ -100,6 +102,8 @@ func (z *ZipFS) Open(name string) (file http.File, err error) {
 	name = strings.Trim(name, "/")
 	if name == "" {
 		name = "."
+	} else {
+		name = strings.ToLower(name)
 	}
 
 	d := z.dirs[name]
