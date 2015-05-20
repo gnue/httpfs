@@ -3,13 +3,13 @@ package unionfs
 import (
 	"io"
 	"os"
+	"sort"
 	"strings"
 )
 
 type Dir struct {
 	fi     os.FileInfo
 	finfos []os.FileInfo
-	files  map[string]os.FileInfo
 	offset int64
 }
 
@@ -58,20 +58,25 @@ func (d *Dir) addFile(finfos ...os.FileInfo) {
 		return
 	}
 
-	if d.files == nil {
-		d.files = make(map[string]os.FileInfo)
-	}
-
 	d.capUp(len(finfos))
 
 	for _, fi := range finfos {
 		name := strings.ToLower(fi.Name())
-		if d.files[name] != nil {
+		data := d.finfos
+
+		i := sort.Search(len(data), func(i int) bool {
+			return strings.ToLower(data[i].Name()) >= name
+		})
+
+		if i < len(data) && strings.ToLower(data[i].Name()) == name {
 			continue
 		}
 
-		d.files[name] = fi
-		d.finfos = append(d.finfos, fi)
+		data = append(data, fi)
+		copy(data[i+1:], data[i:])
+		data[i] = fi
+
+		d.finfos = data
 	}
 }
 
