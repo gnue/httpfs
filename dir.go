@@ -3,6 +3,7 @@ package unionfs
 import (
 	"io"
 	"os"
+	"strings"
 )
 
 type Dir struct {
@@ -64,7 +65,7 @@ func (d *Dir) addFile(finfos ...os.FileInfo) {
 	d.capUp(len(finfos))
 
 	for _, fi := range finfos {
-		name := fi.Name()
+		name := strings.ToLower(fi.Name())
 		if d.files[name] != nil {
 			continue
 		}
