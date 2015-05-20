@@ -61,6 +61,8 @@ func (d *Dir) addFile(finfos ...os.FileInfo) {
 		d.files = make(map[string]os.FileInfo)
 	}
 
+	d.capUp(len(finfos))
+
 	for _, fi := range finfos {
 		name := fi.Name()
 		if d.files[name] != nil {
@@ -69,5 +71,14 @@ func (d *Dir) addFile(finfos ...os.FileInfo) {
 
 		d.files[name] = fi
 		d.finfos = append(d.finfos, fi)
+	}
+}
+
+func (d *Dir) capUp(n int) {
+	l := len(d.finfos)
+	if cap(d.finfos) < l+n {
+		tmp := make([]os.FileInfo, l, l+n*2)
+		copy(tmp, d.finfos)
+		d.finfos = tmp
 	}
 }
