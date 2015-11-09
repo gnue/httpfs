@@ -2,11 +2,11 @@ package zipfs
 
 import (
 	"archive/zip"
-	"log"
 	"net/http"
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 type ZipFS struct {
@@ -84,12 +84,11 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 		}
 
 		dn := path.Dir(fn)
-		d := dirs[dn]
-		if d == nil {
-			// TODO: エラー処理
-			log.Printf("zipfs: not found directory info '%s'", dn)
-			continue
+		if dirs[dn] == nil {
+			mkpath(dirs, path.Dir(f.FileHeader.Name), fi.ModTime())
 		}
+
+		d := dirs[dn]
 		d.addFile(fn, &ZipFile{f})
 	}
 
@@ -132,4 +131,23 @@ func (z *ZipFS) Open(name string) (file http.File, err error) {
 
 func (z *ZipFS) Close() error {
 	return z.rc.Close()
+}
+
+func mkpath(dirs map[string]*File, fn string, t time.Time) {
+	subdir := strings.Split(fn, "/")
+	parent := dirs["."]
+	dn := ""
+
+	for _, d := range subdir {
+		dn += strings.ToLower(d)
+
+		if dirs[dn] == nil {
+			fi := &FileInfo{name: d, modTime: t}
+			dirs[dn] = &File{fi: fi, files: make(map[string]Finfo, 0)}
+			parent.addFile(dn, &ZipDir{fi})
+		}
+
+		parent = dirs[dn]
+		dn += "/"
+	}
 }
