@@ -44,10 +44,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 	}
 
 	// root directory
-	dirs["."] = &File{
-		fi:    &FileInfo{name: "/", modTime: fi.ModTime()},
-		files: make(map[string]Finfo, 0),
-	}
+	dirs["."] = newDir(&FileInfo{name: "/", modTime: fi.ModTime()})
 
 	for _, f := range rc.File {
 		fi := f.FileHeader.FileInfo()
@@ -73,10 +70,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 				fn = "."
 			}
 
-			dirs[fn] = &File{
-				fi:    fi,
-				files: make(map[string]Finfo, 0),
-			}
+			dirs[fn] = newDir(fi)
 
 			if fn == "." {
 				continue
@@ -133,6 +127,10 @@ func (z *ZipFS) Close() error {
 	return z.rc.Close()
 }
 
+func newDir(fi os.FileInfo) *File {
+	return &File{fi: fi, files: make(map[string]Finfo, 0)}
+}
+
 func mkpath(dirs map[string]*File, fn string, t time.Time) {
 	subdir := strings.Split(fn, "/")
 	parent := dirs["."]
@@ -143,7 +141,7 @@ func mkpath(dirs map[string]*File, fn string, t time.Time) {
 
 		if dirs[dn] == nil {
 			fi := &FileInfo{name: d, modTime: t}
-			dirs[dn] = &File{fi: fi, files: make(map[string]Finfo, 0)}
+			dirs[dn] = newDir(fi)
 			parent.addFile(dn, &ZipDir{fi})
 		}
 
