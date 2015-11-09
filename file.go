@@ -1,7 +1,6 @@
 package zipfs
 
 import (
-	"archive/zip"
 	"bytes"
 	"io"
 	"io/ioutil"
@@ -9,10 +8,15 @@ import (
 	"path"
 )
 
+type Finfo interface {
+	FileInfo() os.FileInfo
+	Open() (io.ReadCloser, error)
+}
+
 type File struct {
 	fi     os.FileInfo
 	rc     io.ReadCloser
-	files  map[string]*zip.File
+	files  map[string]Finfo
 	fnames []string
 	offset int64
 
@@ -94,11 +98,11 @@ func (f *File) readdir() ([]os.FileInfo, error) {
 			f.cache.finfos = make([]os.FileInfo, 0, size)
 
 			for _, fname := range f.fnames {
-				zf := f.files[fname]
-				if zf == nil {
+				fi := f.files[fname]
+				if fi == nil {
 					continue
 				}
-				f.cache.finfos = append(f.cache.finfos, zf.FileHeader.FileInfo())
+				f.cache.finfos = append(f.cache.finfos, fi.FileInfo())
 			}
 		}
 
@@ -132,11 +136,11 @@ func (f *File) newReader() (*bytes.Reader, error) {
 	return f.cache.r, nil
 }
 
-func (f *File) addFile(fn string, zf *zip.File) {
+func (f *File) addFile(fn string, fi Finfo) {
 	fname := path.Base(fn)
 
 	if f.files[fname] == nil {
-		f.files[fname] = zf
+		f.files[fname] = fi
 		f.fnames = append(f.fnames, fname)
 	}
 }

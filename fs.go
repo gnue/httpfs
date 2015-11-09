@@ -46,7 +46,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 	// root directory
 	dirs["."] = &File{
 		fi:    &FileInfo{name: "/", modTime: fi.ModTime()},
-		files: make(map[string]*zip.File, 0),
+		files: make(map[string]Finfo, 0),
 	}
 
 	for _, f := range rc.File {
@@ -75,7 +75,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 
 			dirs[fn] = &File{
 				fi:    fi,
-				files: make(map[string]*zip.File, 0),
+				files: make(map[string]Finfo, 0),
 			}
 
 			if fn == "." {
@@ -90,7 +90,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 			log.Printf("zipfs: not found directory info '%s'", dn)
 			continue
 		}
-		d.addFile(fn, f)
+		d.addFile(fn, &ZipFile{f})
 	}
 
 	z = &ZipFS{Filename: name, rc: rc, dirs: dirs}
@@ -127,7 +127,7 @@ func (z *ZipFS) Open(name string) (file http.File, err error) {
 		return
 	}
 
-	return &File{fi: f.FileHeader.FileInfo(), rc: rc}, nil
+	return &File{fi: f.FileInfo(), rc: rc}, nil
 }
 
 func (z *ZipFS) Close() error {
