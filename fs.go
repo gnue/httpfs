@@ -48,8 +48,8 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 
 	for _, f := range rc.File {
 		fi := f.FileHeader.FileInfo()
-		fn := strings.Trim(f.FileHeader.Name, "/")
-		fn = strings.ToLower(fn)
+		org := strings.Trim(f.FileHeader.Name, "/")
+		fn := strings.ToLower(org)
 
 		// prefix check
 		if 0 < len(prefix) {
@@ -58,6 +58,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 			}
 			fn = strings.TrimPrefix(fn, prefix)
 			fn = strings.Trim(fn, "/")
+			org = org[len(org)-len(fn):]
 		}
 
 		// ignore file
@@ -79,7 +80,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 
 		dn := path.Dir(fn)
 		if dirs[dn] == nil {
-			mkpath(dirs, path.Dir(f.FileHeader.Name), fi.ModTime())
+			mkpath(dirs, path.Dir(org), fi.ModTime())
 		}
 
 		d := dirs[dn]
@@ -142,7 +143,9 @@ func mkpath(dirs map[string]*File, fn string, t time.Time) {
 		if dirs[dn] == nil {
 			fi := &FileInfo{name: d, modTime: t}
 			dirs[dn] = newDir(fi)
-			parent.addFile(dn, &ZipDir{fi})
+			if parent != nil {
+				parent.addFile(dn, &ZipDir{fi})
+			}
 		}
 
 		parent = dirs[dn]
