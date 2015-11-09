@@ -2,10 +2,13 @@ package main
 
 import (
 	"github.com/gnue/unionfs"
+	"github.com/gnue/zipfs"
 	"github.com/jessevdk/go-flags"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -13,9 +16,11 @@ var opts struct {
 	Host string `short:"H" long:"host" default:"localhost:3000" description:"host:port"`
 
 	Args struct {
-		Dir []string `positional-arg-name:"dir" default:"." description:"directory"`
+		Dir []string `positional-arg-name:"dir" default:"." description:"directory or zip"`
 	} `positional-args:"yes"`
 }
+
+var reZipPath = regexp.MustCompile(`^(.+\.zip)(?:/(.*))?$`)
 
 func main() {
 	_, err := flags.Parse(&opts)
@@ -44,9 +49,28 @@ func main() {
 		dirs = []string{"."}
 	}
 
+	ignore := []string{"__MACOSX", ".DS_Store"}
 	list := make([]http.FileSystem, len(dirs))
+
 	for i, d := range dirs {
-		list[i] = http.Dir(d)
+		prefix := ""
+
+		m := reZipPath.FindStringSubmatch(d)
+		if 2 < len(m) {
+			d = m[1]
+			prefix = m[2]
+		}
+
+		if filepath.Ext(d) == ".zip" {
+			zipOpts := zipfs.Options{Prefix: prefix, Ignore: ignore}
+			fs, err := zipfs.OpenFS(d, &zipOpts)
+			if err != nil {
+				log.Fatal(err)
+			}
+			list[i] = fs
+		} else {
+			list[i] = http.Dir(d)
+		}
 	}
 	fs := unionfs.New(list...)
 
