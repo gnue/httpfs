@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gnue/unionfs"
 	"github.com/jessevdk/go-flags"
 	"log"
 	"net/http"
@@ -12,7 +13,7 @@ var opts struct {
 	Host string `short:"H" long:"host" default:"localhost:3000" description:"host:port"`
 
 	Args struct {
-		Dir string `positional-arg-name:"dir" default:"." description:"directory"`
+		Dir []string `positional-arg-name:"dir" default:"." description:"directory"`
 	} `positional-args:"yes"`
 }
 
@@ -22,6 +23,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Address
 	h := strings.Split(opts.Host, ":")
 	if len(h) < 2 {
 		h = append(h, "")
@@ -36,7 +38,19 @@ func main() {
 
 	host := strings.Join(h, ":")
 
-	fs := http.Dir(opts.Args.Dir)
+	// File Systems
+	dirs := opts.Args.Dir
+	if len(dirs) == 0 {
+		dirs = []string{"."}
+	}
+
+	list := make([]http.FileSystem, len(dirs))
+	for i, d := range dirs {
+		list[i] = http.Dir(d)
+	}
+	fs := unionfs.New(list...)
+
+	// Serve
 	err = http.ListenAndServe(host, http.FileServer(fs))
 	if err != nil {
 		log.Fatal(err)
