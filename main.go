@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gnue/indexfs"
 	"github.com/gnue/unionfs"
 	"github.com/gnue/zipfs"
 	"github.com/jessevdk/go-flags"
@@ -13,7 +14,8 @@ import (
 )
 
 var opts struct {
-	Host string `short:"H" long:"host" default:"localhost:3000" description:"host:port"`
+	Host  string `short:"H" long:"host" default:"localhost:3000" description:"host:port"`
+	Index string `long:"index" default:"index.html" description:"directory index"`
 
 	Args struct {
 		Dir []string `positional-arg-name:"dir" default:"." description:"directory or zip"`
@@ -52,6 +54,14 @@ func main() {
 	fs, err := newFileSystem(dirs)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	switch opts.Index {
+	case "false":
+	case "true", "":
+		fs = indexfs.New(fs, nil)
+	default:
+		fs = indexfs.New(fs, strings.Split(opts.Index, ","))
 	}
 
 	// Serve
