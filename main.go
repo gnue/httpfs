@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var opts struct {
@@ -21,8 +22,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	h := strings.Split(opts.Host, ":")
+	if len(h) < 2 {
+		h = append(h, "")
+	}
+
+	if h[0] == "" {
+		h[0] = "localhost"
+	}
+	if h[1] == "" {
+		h[1] = "80"
+	}
+
+	host := strings.Join(h, ":")
+
 	fs := http.Dir(opts.Args.Dir)
-	err = http.ListenAndServe(opts.Host, http.FileServer(fs))
+	err = http.ListenAndServe(host, http.FileServer(fs))
 	if err != nil {
 		log.Fatal(err)
 	}
