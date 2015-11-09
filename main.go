@@ -49,6 +49,19 @@ func main() {
 		dirs = []string{"."}
 	}
 
+	fs, err := newFileSystem(dirs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Serve
+	err = http.ListenAndServe(host, http.FileServer(fs))
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func newFileSystem(dirs []string) (http.FileSystem, error) {
 	ignore := []string{"__MACOSX", ".DS_Store"}
 	list := make([]http.FileSystem, len(dirs))
 
@@ -65,18 +78,13 @@ func main() {
 			zipOpts := zipfs.Options{Prefix: prefix, Ignore: ignore}
 			fs, err := zipfs.OpenFS(d, &zipOpts)
 			if err != nil {
-				log.Fatal(err)
+				return nil, err
 			}
 			list[i] = fs
 		} else {
 			list[i] = http.Dir(d)
 		}
 	}
-	fs := unionfs.New(list...)
 
-	// Serve
-	err = http.ListenAndServe(host, http.FileServer(fs))
-	if err != nil {
-		log.Fatal(err)
-	}
+	return unionfs.New(list...), nil
 }
