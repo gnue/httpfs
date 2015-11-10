@@ -40,8 +40,14 @@ func (idx *IndexFS) Open(name string) (http.File, error) {
 	}
 	file.Close()
 
+	return idx.OpenIndex(name)
+}
+
+func (idx *IndexFS) OpenIndex(dir string) (http.File, error) {
+	fs := idx.fileSystem
+
 	for _, filename := range idx.indexes {
-		fn := filepath.Join(name, filename)
+		fn := filepath.Join(dir, filename)
 
 		file, err := fs.Open(fn)
 		if err == nil {
