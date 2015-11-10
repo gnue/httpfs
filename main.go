@@ -1,17 +1,18 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/gnue/indexfs"
-	"github.com/gnue/unionfs"
-	"github.com/gnue/zipfs"
-	"github.com/jessevdk/go-flags"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gnue/indexfs"
+	"github.com/gnue/unionfs"
+	"github.com/gnue/zipfs"
+	"github.com/jessevdk/go-flags"
 )
 
 var opts struct {
