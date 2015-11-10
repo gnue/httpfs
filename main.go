@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/gnue/indexfs"
 	"github.com/gnue/unionfs"
 	"github.com/gnue/zipfs"
@@ -65,10 +66,9 @@ func main() {
 	}
 
 	// Serve
-	err = http.ListenAndServe(host, http.FileServer(fs))
-	if err != nil {
-		log.Fatal(err)
-	}
+	r := gin.Default()
+	r.StaticFS("/", fs)
+	r.Run(host)
 }
 
 func newFileSystem(dirs []string) (http.FileSystem, error) {
