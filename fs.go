@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var OSX_Ignore = []string{"__MACOSX", ".DS_Store"}
+
 type ZipFS struct {
 	Filename string
 	rc       *zip.ReadCloser
@@ -31,6 +33,15 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 	fi, err := os.Stat(name)
 	if err != nil {
 		return
+	}
+
+	// opts
+	if opts == nil {
+		opts = &Options{}
+	}
+
+	if opts.Ignore == nil {
+		opts.Ignore = OSX_Ignore
 	}
 
 	// ignore files
