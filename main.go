@@ -73,7 +73,6 @@ func main() {
 }
 
 func newFileSystem(dirs []string) (http.FileSystem, error) {
-	ignore := []string{"__MACOSX", ".DS_Store"}
 	list := make([]http.FileSystem, len(dirs))
 
 	for i, d := range dirs {
@@ -86,7 +85,7 @@ func newFileSystem(dirs []string) (http.FileSystem, error) {
 		}
 
 		if filepath.Ext(d) == ".zip" {
-			zipOpts := zipfs.Options{Prefix: prefix, Ignore: ignore}
+			zipOpts := zipfs.Options{Prefix: prefix}
 			fs, err := zipfs.OpenFS(d, &zipOpts)
 			if err != nil {
 				return nil, err
