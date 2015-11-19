@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -89,9 +89,9 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 			}
 		}
 
-		dn := path.Dir(fn)
+		dn := filepath.Dir(fn)
 		if dirs[dn] == nil {
-			mkpath(dirs, path.Dir(org), fi.ModTime())
+			mkpath(dirs, filepath.Dir(org), fi.ModTime())
 		}
 
 		d := dirs[dn]
@@ -117,12 +117,12 @@ func (z *ZipFS) Open(name string) (file http.File, err error) {
 		return &f, nil
 	}
 
-	d = z.dirs[path.Dir(name)]
+	d = z.dirs[filepath.Dir(name)]
 	if d == nil {
 		return nil, os.ErrNotExist
 	}
 
-	f := d.files[path.Base(name)]
+	f := d.files[filepath.Base(name)]
 	if f == nil {
 		return nil, os.ErrNotExist
 	}

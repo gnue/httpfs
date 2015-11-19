@@ -5,7 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 type Finfo interface {
@@ -137,7 +137,7 @@ func (f *File) newReader() (*bytes.Reader, error) {
 }
 
 func (f *File) addFile(fn string, fi Finfo) {
-	fname := path.Base(fn)
+	fname := filepath.Base(fn)
 
 	if f.files[fname] == nil {
 		f.files[fname] = fi
