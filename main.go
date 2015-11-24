@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gnue/gitfs"
 	"github.com/gnue/indexfs"
 	"github.com/gnue/unionfs"
 	"github.com/gnue/zipfs"
@@ -17,9 +18,10 @@ import (
 )
 
 var opts struct {
-	Host  string `short:"H" long:"host" default:"localhost" description:"host"`
-	Port  string `short:"p" long:"port" default:"3000" description:"port"`
-	Index string `long:"index" default:"index.html" description:"directory index"`
+	Host   string `short:"H" long:"host" default:"localhost" description:"host"`
+	Port   string `short:"p" long:"port" default:"3000" description:"port"`
+	Branch string `short:"b" long:"branch" default:"master" description:"git branch"`
+	Index  string `long:"index" default:"index.html" description:"directory index"`
 
 	Args struct {
 		Dir []string `positional-arg-name:"dir" default:"." description:"directory or zip"`
@@ -74,14 +76,17 @@ func newFileSystem(dirs []string) (http.FileSystem, error) {
 			prefix = m[2]
 		}
 
-		if filepath.Ext(d) == ".zip" {
+		switch filepath.Ext(d) {
+		case ".zip":
 			zipOpts := zipfs.Options{Prefix: prefix}
 			fs, err := zipfs.OpenFS(d, &zipOpts)
 			if err != nil {
 				return nil, err
 			}
 			list[i] = fs
-		} else {
+		case ".git":
+			list[i] = gitfs.New(d, opts.Branch)
+		default:
 			list[i] = http.Dir(d)
 		}
 	}
