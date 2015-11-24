@@ -6,7 +6,10 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
+
+const TIME_ISO = "2006-01-02 15:04:05 -0700"
 
 type Repo struct {
 	Path string
@@ -56,7 +59,29 @@ func (repo *Repo) Stat(fname string, treeish string) (*FileInfo, error) {
 	}
 
 	s := strings.TrimRight(string(b), "\r\n")
-	return parseInfo(s)
+	finfo, err := parseInfo(s)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := repo.modTime(fname, treeish)
+	if err != nil {
+		return nil, err
+	}
+
+	finfo.modTime = t
+
+	return finfo, nil
+}
+
+func (repo *Repo) modTime(fname string, treeish string) (t time.Time, err error) {
+	b, err := repo.Exec("log", "--pretty=%ad", "--date=iso", "-1", treeish, "--", fname)
+	if err != nil {
+		return
+	}
+
+	s := strings.TrimRight(string(b), "\r\n")
+	return time.Parse(TIME_ISO, s)
 }
 
 func parseInfo(s string) (*FileInfo, error) {
