@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,7 +17,8 @@ import (
 )
 
 var opts struct {
-	Host  string `short:"H" long:"host" default:"localhost:3000" description:"host:port"`
+	Host  string `short:"H" long:"host" default:"localhost" description:"host"`
+	Port  string `short:"p" long:"port" default:"3000" description:"port"`
 	Index string `long:"index" default:"index.html" description:"directory index"`
 
 	Args struct {
@@ -33,19 +35,7 @@ func main() {
 	}
 
 	// Address
-	h := strings.Split(opts.Host, ":")
-	if len(h) < 2 {
-		h = append(h, "")
-	}
-
-	if h[0] == "" {
-		h[0] = "localhost"
-	}
-	if h[1] == "" {
-		h[1] = "80"
-	}
-
-	host := strings.Join(h, ":")
+	addr := net.JoinHostPort(opts.Host, opts.Port)
 
 	// File Systems
 	dirs := opts.Args.Dir
@@ -69,7 +59,7 @@ func main() {
 	// Serve
 	r := gin.Default()
 	r.StaticFS("/", fs)
-	r.Run(host)
+	r.Run(addr)
 }
 
 func newFileSystem(dirs []string) (http.FileSystem, error) {
