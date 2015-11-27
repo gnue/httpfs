@@ -1,7 +1,6 @@
 package gitfs
 
 import (
-	"bytes"
 	"os"
 	"os/exec"
 	"strconv"
@@ -29,15 +28,6 @@ func (repo *Repo) Open(fname string, treeish string) (*File, error) {
 	}
 
 	f := &File{repo: repo, finfo: finfo}
-
-	if !finfo.IsDir() {
-		object := &Object{repo, finfo.object}
-		b, err := object.Read()
-		if err != nil {
-			return nil, err
-		}
-		f.r = bytes.NewReader(b)
-	}
 
 	return f, nil
 }

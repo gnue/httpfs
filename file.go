@@ -3,7 +3,6 @@ package gitfs
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 )
@@ -25,10 +24,28 @@ func (f *File) Close() error {
 
 func (f *File) Read(p []byte) (int, error) {
 	if f.r == nil {
-		return 0, fmt.Errorf("gitfs: can't read %q", f.finfo.Name())
+		r, err := f.newReader()
+		if err != nil {
+			return 0, err
+		}
+		f.r = r
 	}
 
 	return f.r.Read(p)
+}
+
+func (f *File) newReader() (*bytes.Reader, error) {
+	if f.finfo.IsDir() {
+		return nil, os.ErrInvalid
+	}
+
+	object := &Object{f.repo, f.finfo.object}
+	b, err := object.Read()
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.NewReader(b), nil
 }
 
 func (f *File) Readdir(count int) (finfos []os.FileInfo, err error) {
@@ -93,7 +110,11 @@ func (f *File) readdir() ([]os.FileInfo, error) {
 
 func (f *File) Seek(offset int64, whence int) (int64, error) {
 	if f.r == nil {
-		return 0, fmt.Errorf("gitfs: can't seek %q", f.finfo.Name())
+		r, err := f.newReader()
+		if err != nil {
+			return 0, err
+		}
+		f.r = r
 	}
 
 	return f.r.Seek(offset, whence)
