@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
+	"regexp"
 )
 
 type File struct {
@@ -12,6 +14,7 @@ type File struct {
 	file   http.File
 	finfo  os.FileInfo
 	r      *bytes.Reader
+	reExts *regexp.Regexp
 }
 
 func (f *File) Close() error {
@@ -45,7 +48,29 @@ func (f *File) newReader() (*bytes.Reader, error) {
 	f.file.Seek(0, os.SEEK_CUR)
 
 	output := f.engine.Render(b)
+
+	if f.reExts != nil {
+		output = reHref.ReplaceAllFunc(output, f.replaceHref)
+	}
+
 	return bytes.NewReader(output), nil
+}
+
+var reHref = regexp.MustCompile(`(?i)\shref="[^"]+"`)
+
+func (f *File) replaceHref(b []byte) []byte {
+	sub := f.reExts.FindSubmatchIndex(b)
+	if sub == nil {
+		return b
+	}
+
+	s := string(b[sub[2]:sub[3]])
+	u, err := url.Parse(s)
+	if err == nil && u.Host != "" {
+		return b
+	}
+
+	return append(b[:sub[4]], b[sub[5]:]...)
 }
 
 func (f *File) Readdir(count int) ([]os.FileInfo, error) {
