@@ -2,6 +2,7 @@ package templatefs
 
 import (
 	"bytes"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -10,11 +11,12 @@ import (
 )
 
 type File struct {
-	engine Engine
-	file   http.File
-	finfo  os.FileInfo
-	r      *bytes.Reader
-	reExts *regexp.Regexp
+	engine       Engine
+	pageTemplete *template.Template
+	file         http.File
+	finfo        os.FileInfo
+	r            *bytes.Reader
+	reExts       *regexp.Regexp
 }
 
 func (f *File) Close() error {
@@ -36,6 +38,11 @@ func (f *File) Read(p []byte) (int, error) {
 	return f.r.Read(p)
 }
 
+type data struct {
+	Title string
+	Body  string
+}
+
 func (f *File) newReader() (*bytes.Reader, error) {
 	if f.finfo.IsDir() {
 		return nil, os.ErrInvalid
@@ -53,7 +60,13 @@ func (f *File) newReader() (*bytes.Reader, error) {
 		output = reHref.ReplaceAllFunc(output, f.replaceHref)
 	}
 
-	return bytes.NewReader(output), nil
+	var page bytes.Buffer
+	err = f.pageTemplete.Execute(&page, &data{"", string(output)})
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.NewReader(page.Bytes()), nil
 }
 
 var reHref = regexp.MustCompile(`(?i)\shref="[^"]+"`)

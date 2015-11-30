@@ -1,6 +1,7 @@
 package templatefs
 
 import (
+	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,13 +15,26 @@ type Engine interface {
 }
 
 type TemplateFS struct {
-	Engines    []Engine
-	FileSystem http.FileSystem
-	reExts     *regexp.Regexp
+	Engines      []Engine
+	PageTemplete *template.Template
+	FileSystem   http.FileSystem
+	reExts       *regexp.Regexp
 }
 
 func New(fs http.FileSystem, e ...Engine) *TemplateFS {
-	return &TemplateFS{FileSystem: fs, Engines: e, reExts: compileExts(e)}
+	funcMap := template.FuncMap{
+		"safehtml": func(text string) template.HTML { return template.HTML(text) },
+	}
+
+	s := strings.TrimLeft(pageTemplate, "\r\n")
+	tmpl := template.Must(template.New("generic").Funcs(funcMap).Parse(s))
+
+	return &TemplateFS{
+		FileSystem:   fs,
+		Engines:      e,
+		PageTemplete: tmpl,
+		reExts:       compileExts(e),
+	}
 }
 
 func (t *TemplateFS) Open(name string) (http.File, error) {
@@ -45,7 +59,15 @@ func (t *TemplateFS) Open(name string) (http.File, error) {
 
 	e := t.FindEngine(finfo.Name())
 	if e != nil {
-		return &File{engine: e, file: f, finfo: finfo, reExts: t.reExts}, nil
+		file := &File{
+			engine:       e,
+			pageTemplete: t.PageTemplete,
+			file:         f,
+			finfo:        finfo,
+			reExts:       t.reExts,
+		}
+
+		return file, nil
 	}
 
 	return f, nil
