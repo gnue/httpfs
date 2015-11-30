@@ -3,6 +3,7 @@ package templatefs
 import (
 	"html/template"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,7 +20,7 @@ type TemplateFS struct {
 	Engines      map[string]Engine
 	PageTemplete *template.Template
 	FileSystem   http.FileSystem
-	reExts       *regexp.Regexp
+	postRender   func([]byte) []byte
 }
 
 func New(fs http.FileSystem, engines ...Engine) *TemplateFS {
@@ -40,7 +41,7 @@ func New(fs http.FileSystem, engines ...Engine) *TemplateFS {
 		t.RegEngine(e)
 	}
 
-	t.compileExts()
+	t.createPostRender()
 
 	return t
 }
@@ -72,7 +73,7 @@ func (t *TemplateFS) Open(name string) (http.File, error) {
 			pageTemplete: t.PageTemplete,
 			file:         f,
 			finfo:        finfo,
-			reExts:       t.reExts,
+			postRender:   t.postRender,
 		}
 
 		return file, nil
@@ -113,12 +114,37 @@ func (t *TemplateFS) FindEngine(name string) Engine {
 	return t.Engines[ext]
 }
 
-func (t *TemplateFS) compileExts() {
+var reHref = regexp.MustCompile(`(?i)\shref="[^"]+"`)
+
+func (t *TemplateFS) createPostRender() {
+	reExts := t.compileExts()
+
+	fn := func(b []byte) []byte {
+		sub := reExts.FindSubmatchIndex(b)
+		if sub == nil {
+			return b
+		}
+
+		s := string(b[sub[2]:sub[3]])
+		u, err := url.Parse(s)
+		if err == nil && u.Host != "" {
+			return b
+		}
+
+		return append(b[:sub[4]], b[sub[5]:]...)
+	}
+
+	t.postRender = func(b []byte) []byte {
+		return reHref.ReplaceAllFunc(b, fn)
+	}
+}
+
+func (t *TemplateFS) compileExts() *regexp.Regexp {
 	exts := make([]string, 0, len(t.Engines))
 
 	for ext, _ := range t.Engines {
 		exts = append(exts, ext)
 	}
 
-	t.reExts = regexp.MustCompile(`(?i)\shref="(.+)(` + strings.Join(exts, "|") + `)"`)
+	return regexp.MustCompile(`(?i)\shref="(.+)(` + strings.Join(exts, "|") + `)"`)
 }
