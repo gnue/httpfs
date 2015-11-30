@@ -1,6 +1,7 @@
 package templatefs
 
 import (
+	"bytes"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -20,7 +21,7 @@ type TemplateFS struct {
 	Engines      map[string]Engine
 	PageTemplete *template.Template
 	FileSystem   http.FileSystem
-	postRender   func([]byte) []byte
+	reExts       *regexp.Regexp
 }
 
 func New(fs http.FileSystem, engines ...Engine) *TemplateFS {
@@ -41,7 +42,7 @@ func New(fs http.FileSystem, engines ...Engine) *TemplateFS {
 		t.RegEngine(e)
 	}
 
-	t.createPostRender()
+	t.compileExts()
 
 	return t
 }
@@ -69,11 +70,9 @@ func (t *TemplateFS) Open(name string) (http.File, error) {
 	e := t.FindEngine(finfo.Name())
 	if e != nil {
 		file := &File{
-			engine:       e,
-			pageTemplete: t.PageTemplete,
-			file:         f,
-			finfo:        finfo,
-			postRender:   t.postRender,
+			file:   f,
+			finfo:  finfo,
+			render: func(b []byte) ([]byte, error) { return t.render(e, b, finfo) },
 		}
 
 		return file, nil
@@ -114,13 +113,40 @@ func (t *TemplateFS) FindEngine(name string) Engine {
 	return t.Engines[ext]
 }
 
+type data struct {
+	FileInfo os.FileInfo
+	Page     *Page
+	Title    string
+	Body     string
+}
+
+func (t *TemplateFS) render(e Engine, b []byte, finfo os.FileInfo) ([]byte, error) {
+	output := e.Render(b)
+	output = t.postRender(output)
+
+	pinfo := e.PageInfo(b)
+	d := &data{FileInfo: finfo, Page: pinfo, Title: pinfo.Title, Body: string(output)}
+
+	tmpl := t.PageTemplete.Lookup(pinfo.Layout)
+	if tmpl == nil {
+		tmpl = t.PageTemplete
+		pinfo.Layout = tmpl.Name()
+	}
+
+	var page bytes.Buffer
+	err := tmpl.Execute(&page, d)
+	if err != nil {
+		return nil, err
+	}
+
+	return page.Bytes(), nil
+}
+
 var reHref = regexp.MustCompile(`(?i)\shref="[^"]+"`)
 
-func (t *TemplateFS) createPostRender() {
-	reExts := t.compileExts()
-
+func (t *TemplateFS) postRender(b []byte) []byte {
 	fn := func(b []byte) []byte {
-		sub := reExts.FindSubmatchIndex(b)
+		sub := t.reExts.FindSubmatchIndex(b)
 		if sub == nil {
 			return b
 		}
@@ -134,17 +160,15 @@ func (t *TemplateFS) createPostRender() {
 		return append(b[:sub[4]], b[sub[5]:]...)
 	}
 
-	t.postRender = func(b []byte) []byte {
-		return reHref.ReplaceAllFunc(b, fn)
-	}
+	return reHref.ReplaceAllFunc(b, fn)
 }
 
-func (t *TemplateFS) compileExts() *regexp.Regexp {
+func (t *TemplateFS) compileExts() {
 	exts := make([]string, 0, len(t.Engines))
 
 	for ext, _ := range t.Engines {
 		exts = append(exts, ext)
 	}
 
-	return regexp.MustCompile(`(?i)\shref="(.+)(` + strings.Join(exts, "|") + `)"`)
+	t.reExts = regexp.MustCompile(`(?i)\shref="(.+)(` + strings.Join(exts, "|") + `)"`)
 }
