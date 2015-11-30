@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"github.com/gnue/templatefs"
 	"github.com/russross/blackfriday"
 )
 
@@ -15,8 +16,8 @@ func (e *Engine) Render(input []byte) []byte {
 	return blackfriday.Markdown(input, r, e.Extensions)
 }
 
-func (e *Engine) Title(input []byte) string {
-	return getTitle(input)
+func (e *Engine) PageInfo(input []byte) *templatefs.Page {
+	return &templatefs.Page{Title: getTitle(input)}
 }
 
 func (e *Engine) Exts() []string {

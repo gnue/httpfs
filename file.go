@@ -39,6 +39,7 @@ func (f *File) Read(p []byte) (int, error) {
 }
 
 type data struct {
+	Page  *Page
 	Title string
 	Body  string
 }
@@ -61,8 +62,17 @@ func (f *File) newReader() (*bytes.Reader, error) {
 		output = reHref.ReplaceAllFunc(output, f.replaceHref)
 	}
 
+	pinfo := e.PageInfo(b)
+	d := &data{Page: pinfo, Title: pinfo.Title, Body: string(output)}
+
+	t := f.pageTemplete.Lookup(pinfo.Layout)
+	if t == nil {
+		t = f.pageTemplete
+		pinfo.Layout = t.Name()
+	}
+
 	var page bytes.Buffer
-	err = f.pageTemplete.Execute(&page, &data{e.Title(b), string(output)})
+	err = t.Execute(&page, d)
 	if err != nil {
 		return nil, err
 	}

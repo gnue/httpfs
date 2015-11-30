@@ -11,7 +11,7 @@ import (
 
 type Engine interface {
 	Render(input []byte) []byte
-	Title(input []byte) string
+	PageInfo(input []byte) *Page
 	Exts() []string
 }
 
