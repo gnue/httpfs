@@ -16,13 +16,13 @@ type Engine interface {
 }
 
 type TemplateFS struct {
-	Engines      []Engine
+	Engines      map[string]Engine
 	PageTemplete *template.Template
 	FileSystem   http.FileSystem
 	reExts       *regexp.Regexp
 }
 
-func New(fs http.FileSystem, e ...Engine) *TemplateFS {
+func New(fs http.FileSystem, engines ...Engine) *TemplateFS {
 	funcMap := template.FuncMap{
 		"safehtml": func(text string) template.HTML { return template.HTML(text) },
 	}
@@ -30,12 +30,19 @@ func New(fs http.FileSystem, e ...Engine) *TemplateFS {
 	s := strings.TrimLeft(pageTemplate, "\r\n")
 	tmpl := template.Must(template.New("generic").Funcs(funcMap).Parse(s))
 
-	return &TemplateFS{
+	t := &TemplateFS{
 		FileSystem:   fs,
-		Engines:      e,
+		Engines:      make(map[string]Engine),
 		PageTemplete: tmpl,
-		reExts:       compileExts(e),
 	}
+
+	for _, e := range engines {
+		t.RegEngine(e)
+	}
+
+	t.compileExts()
+
+	return t
 }
 
 func (t *TemplateFS) Open(name string) (http.File, error) {
@@ -81,42 +88,37 @@ func (t *TemplateFS) open(name string) (http.File, error) {
 		return f, nil
 	}
 
-	for _, e := range t.Engines {
-		for _, ext := range e.Exts() {
-			f, err = fs.Open(name + ext)
-			if err == nil {
-				return f, nil
-			}
+	for ext, _ := range t.Engines {
+		f, err = fs.Open(name + ext)
+		if err == nil {
+			return f, nil
 		}
 	}
 
 	return nil, os.ErrNotExist
 }
 
-func (t *TemplateFS) FindEngine(name string) Engine {
-	ext := filepath.Ext(name)
-
-	for _, e := range t.Engines {
-		for _, v := range e.Exts() {
-			if ext == v {
-				return e
-			}
-		}
+func (t *TemplateFS) RegEngine(e Engine, exts ...string) {
+	if exts == nil {
+		exts = e.Exts()
 	}
 
-	return nil
+	for _, ext := range exts {
+		t.Engines[ext] = e
+	}
 }
 
-func compileExts(engines []Engine) *regexp.Regexp {
-	exts := make([]string, 0)
+func (t *TemplateFS) FindEngine(name string) Engine {
+	ext := filepath.Ext(name)
+	return t.Engines[ext]
+}
 
-	for _, e := range engines {
-		exts = append(exts, e.Exts()...)
+func (t *TemplateFS) compileExts() {
+	exts := make([]string, 0, len(t.Engines))
+
+	for ext, _ := range t.Engines {
+		exts = append(exts, ext)
 	}
 
-	for i, ext := range exts {
-		exts[i] = strings.Replace(ext, `.`, `\.`, -1)
-	}
-
-	return regexp.MustCompile(`(?i)\shref="(.+)(` + strings.Join(exts, "|") + `)"`)
+	t.reExts = regexp.MustCompile(`(?i)\shref="(.+)(` + strings.Join(exts, "|") + `)"`)
 }
