@@ -11,6 +11,7 @@ import (
 
 type Engine interface {
 	Render(input []byte) []byte
+	Title(input []byte) string
 	Exts() []string
 }
 

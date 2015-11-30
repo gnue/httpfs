@@ -54,14 +54,15 @@ func (f *File) newReader() (*bytes.Reader, error) {
 	}
 	f.file.Seek(0, os.SEEK_CUR)
 
-	output := f.engine.Render(b)
+	e := f.engine
+	output := e.Render(b)
 
 	if f.reExts != nil {
 		output = reHref.ReplaceAllFunc(output, f.replaceHref)
 	}
 
 	var page bytes.Buffer
-	err = f.pageTemplete.Execute(&page, &data{"", string(output)})
+	err = f.pageTemplete.Execute(&page, &data{e.Title(b), string(output)})
 	if err != nil {
 		return nil, err
 	}
