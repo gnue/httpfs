@@ -106,6 +106,10 @@ func (t *TemplateFS) RegEngine(e Engine, exts ...string) {
 	for _, ext := range exts {
 		t.Engines[ext] = e
 	}
+
+	if t.reExts != nil {
+		t.compileExts()
+	}
 }
 
 func (t *TemplateFS) FindEngine(name string) Engine {
