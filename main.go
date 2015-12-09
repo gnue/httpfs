@@ -22,6 +22,8 @@ var opts struct {
 	Port   string `short:"p" long:"port" default:"3000" description:"port"`
 	Branch string `short:"b" long:"branch" default:"master" description:"git branch"`
 	Index  string `long:"index" default:"index.html" description:"directory index"`
+	Cert   string `long:"cert" description:"TLS cert file"`
+	Key    string `long:"key" description:"TLS key file"`
 
 	Args struct {
 		Dir []string `positional-arg-name:"dir" default:"." description:"directory or zip"`
@@ -61,7 +63,12 @@ func main() {
 	// Serve
 	r := gin.Default()
 	r.StaticFS("/", fs)
-	r.Run(addr)
+
+	if opts.Cert != "" && opts.Key != "" {
+		r.RunTLS(addr, opts.Cert, opts.Key)
+	} else {
+		r.Run(addr)
+	}
 }
 
 func newFileSystem(dirs []string) (http.FileSystem, error) {
