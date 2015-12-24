@@ -15,9 +15,8 @@ type IndexFS struct {
 
 func New(fs http.FileSystem, callback callbackFunc) *IndexFS {
 	if callback == nil {
-		callback = func(fs http.FileSystem, dir string) (http.File, error) {
-			return OpenIndex(fs, dir, "index.html")
-		}
+		indexes := Indexes([]string{"index.html"})
+		callback = indexes.DirIndex
 	}
 
 	return &IndexFS{fileSystem: fs, callback: callback}
