@@ -18,12 +18,13 @@ import (
 )
 
 var opts struct {
-	Host   string `short:"H" long:"host" default:"localhost" description:"host"`
-	Port   string `short:"p" long:"port" default:"3000" description:"port"`
-	Branch string `short:"b" long:"branch" default:"master" description:"git branch"`
-	Index  string `long:"index" default:"index.html" description:"directory index"`
-	Cert   string `long:"cert" description:"TLS cert file"`
-	Key    string `long:"key" description:"TLS key file"`
+	Host      string `short:"H" long:"host" default:"localhost" description:"host"`
+	Port      string `short:"p" long:"port" default:"3000" description:"port"`
+	Branch    string `short:"b" long:"branch" default:"master" description:"git branch"`
+	Index     string `long:"index" default:"index.html" description:"directory index"`
+	AutoIndex bool   `long:"autoindex" description:"directory auto index"`
+	Cert      string `long:"cert" description:"TLS cert file"`
+	Key       string `long:"key" description:"TLS key file"`
 
 	Args struct {
 		Dir []string `positional-arg-name:"dir" default:"." description:"directory or zip"`
@@ -52,12 +53,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	switch opts.Index {
-	case "false":
-	case "true", "":
-		fs = indexfs.New(fs, nil)
-	default:
-		fs = indexfs.New(fs, strings.Split(opts.Index, ","))
+	if !opts.AutoIndex || opts.Index != "index.html" {
+		indexes := indexfs.Indexes(strings.Split(opts.Index, ","))
+		if opts.AutoIndex {
+			fs = indexfs.New(fs, indexes.AutoIndex)
+		} else {
+			fs = indexfs.New(fs, indexes.DirIndex)
+		}
 	}
 
 	// Serve
