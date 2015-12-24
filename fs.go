@@ -6,19 +6,21 @@ import (
 	"path/filepath"
 )
 
-var DefaultIndexes = []string{"index.html"}
+type callbackFunc func(http.FileSystem, string) (http.File, error)
 
 type IndexFS struct {
 	fileSystem http.FileSystem
-	indexes    []string
+	callback   callbackFunc
 }
 
-func New(fs http.FileSystem, indexes []string) *IndexFS {
-	if indexes == nil {
-		indexes = DefaultIndexes
+func New(fs http.FileSystem, callback callbackFunc) *IndexFS {
+	if callback == nil {
+		callback = func(fs http.FileSystem, dir string) (http.File, error) {
+			return OpenIndex(fs, dir, "index.html")
+		}
 	}
 
-	return &IndexFS{fileSystem: fs, indexes: indexes}
+	return &IndexFS{fileSystem: fs, callback: callback}
 }
 
 func (idx *IndexFS) Open(name string) (http.File, error) {
@@ -55,18 +57,7 @@ func (idx *IndexFS) Open(name string) (http.File, error) {
 }
 
 func (idx *IndexFS) OpenIndex(dir string) (http.File, error) {
-	fs := idx.fileSystem
-
-	for _, filename := range idx.indexes {
-		fn := filepath.Join(dir, filename)
-
-		file, err := fs.Open(fn)
-		if err == nil {
-			return file, nil
-		}
-	}
-
-	return nil, os.ErrNotExist
+	return idx.callback(idx.fileSystem, dir)
 }
 
 func (idx *IndexFS) HasIndex(dir string) bool {
@@ -77,4 +68,17 @@ func (idx *IndexFS) HasIndex(dir string) bool {
 	}
 
 	return false
+}
+
+func OpenIndex(fs http.FileSystem, dir string, indexes ...string) (http.File, error) {
+	for _, filename := range indexes {
+		fn := filepath.Join(dir, filename)
+
+		file, err := fs.Open(fn)
+		if err == nil {
+			return file, nil
+		}
+	}
+
+	return nil, os.ErrNotExist
 }
