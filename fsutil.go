@@ -66,6 +66,8 @@ func (fs *FileSystem) Glob(pattern string) (matches []string, err error) {
 		}
 	}
 
+	sort.Strings(matches)
+
 	return
 }
 
@@ -77,6 +79,15 @@ func (fs *FileSystem) glob(dir, pattern string, matches []string) (m []string, e
 		return
 	}
 	if !finfo.IsDir() {
+		return
+	}
+
+	if pattern == "**" {
+		err = fs.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			m = append(m, path)
+			return nil
+		})
+
 		return
 	}
 
