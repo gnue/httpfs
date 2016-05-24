@@ -3,7 +3,7 @@ package indexfs_test
 import (
 	"net/http"
 
-	"github.com/gnue/indexfs"
+	"github.com/gnue/httpfs/indexfs"
 )
 
 func ExampleIndexFS() {
