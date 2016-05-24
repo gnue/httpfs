@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gnue/gitfs"
-	"github.com/gnue/indexfs"
-	"github.com/gnue/unionfs"
-	"github.com/gnue/zipfs"
+	"github.com/gnue/httpfs/gitfs"
+	"github.com/gnue/httpfs/indexfs"
+	"github.com/gnue/httpfs/unionfs"
+	"github.com/gnue/httpfs/zipfs"
 	"github.com/jessevdk/go-flags"
 )
 
