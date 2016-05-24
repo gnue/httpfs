@@ -1,3 +1,4 @@
+// Go lang zip http.FileSystem
 package zipfs
 
 import (
