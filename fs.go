@@ -1,3 +1,4 @@
+// Go lang index http.FileSystem
 package indexfs
 
 import (
