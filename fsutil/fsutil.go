@@ -1,6 +1,7 @@
 package fsutil
 
 import (
+	"bytes"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -180,4 +181,21 @@ func (fs *FileSystem) Readdirnames(name string) ([]string, error) {
 	sort.Strings(names)
 
 	return names, nil
+}
+
+func (fs *FileSystem) Readfile(name string) ([]byte, error) {
+	f, err := fs.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	buf := bytes.NewBuffer(make([]byte, 0, fi.Size()))
+	_, err = buf.ReadFrom(f)
+	return buf.Bytes(), err
 }
