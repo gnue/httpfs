@@ -85,7 +85,9 @@ func (fs *FileSystem) glob(dir, pattern string, matches []string) (m []string, e
 
 	if pattern == "**" {
 		err = fs.Walk(dir, func(path string, info os.FileInfo, err error) error {
-			m = append(m, path)
+			if dir != path {
+				m = append(m, path)
+			}
 			return nil
 		})
 
