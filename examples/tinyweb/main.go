@@ -1,3 +1,4 @@
+// tiny http static server (dir, zip, git)
 package main
 
 import (
