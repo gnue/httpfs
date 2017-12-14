@@ -122,6 +122,7 @@ type data struct {
 	FileInfo os.FileInfo
 	Page     *Page
 	Title    string
+	CSS      string
 	Body     string
 }
 
@@ -130,7 +131,7 @@ func (t *TemplateFS) render(e Engine, b []byte, finfo os.FileInfo) ([]byte, erro
 	output = t.postRender(output)
 
 	pinfo := e.PageInfo(b)
-	d := &data{FileInfo: finfo, Page: pinfo, Title: pinfo.Title, Body: string(output)}
+	d := &data{FileInfo: finfo, Page: pinfo, Title: pinfo.Title, CSS: pinfo.CSS, Body: string(output)}
 
 	tmpl := t.PageTemplete.Lookup(pinfo.Layout)
 	if tmpl == nil {

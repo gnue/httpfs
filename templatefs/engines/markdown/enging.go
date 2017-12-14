@@ -17,7 +17,7 @@ func (e *Engine) Render(input []byte) []byte {
 }
 
 func (e *Engine) PageInfo(input []byte) *templatefs.Page {
-	return &templatefs.Page{Title: getTitle(input)}
+	return &templatefs.Page{Title: getTitle(input), CSS: e.CSS}
 }
 
 func (e *Engine) Exts() []string {
