@@ -25,8 +25,10 @@ type TemplateFS struct {
 	reExts       *regexp.Regexp
 }
 
-func New(fs http.FileSystem, engines ...Engine) *TemplateFS {
-	layout := defaultLayout
+func New(fs http.FileSystem, layout *template.Template, engines ...Engine) *TemplateFS {
+	if layout == nil {
+		layout = defaultLayout
+	}
 
 	t := &TemplateFS{
 		FileSystem:   fs,
