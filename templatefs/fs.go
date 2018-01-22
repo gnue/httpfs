@@ -26,17 +26,12 @@ type TemplateFS struct {
 }
 
 func New(fs http.FileSystem, engines ...Engine) *TemplateFS {
-	funcMap := template.FuncMap{
-		"safehtml": func(text string) template.HTML { return template.HTML(text) },
-	}
-
-	s := strings.TrimLeft(pageTemplate, "\r\n")
-	tmpl := template.Must(template.New("generic").Funcs(funcMap).Parse(s))
+	layout := defaultLayout
 
 	t := &TemplateFS{
 		FileSystem:   fs,
 		Engines:      make(map[string]Engine),
-		PageTemplete: tmpl,
+		PageTemplete: layout,
 	}
 
 	for _, e := range engines {
