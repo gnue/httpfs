@@ -3,6 +3,8 @@ package zipfs
 
 import (
 	"archive/zip"
+	"bytes"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,10 +14,15 @@ import (
 
 var OSX_Ignore = []string{"__MACOSX", ".DS_Store"}
 
-type ZipFS struct {
+type FileSystem struct {
+	r    Reader
+	dirs map[string]*File
+}
+
+type FileSystemCloser struct {
+	FileSystem
 	Filename string
-	rc       *zip.ReadCloser
-	dirs     map[string]*File
+	c        io.Closer
 }
 
 type Options struct {
@@ -23,18 +30,74 @@ type Options struct {
 	Ignore []string
 }
 
-func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
-	rc, err := zip.OpenReader(name)
+func New(data []byte, opts *Options) (*FileSystem, error) {
+	b := bytes.NewReader(data)
+	r, err := zip.NewReader(b, b.Size())
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	dirs := make(map[string]*File)
+	dirs := newDirs(r.File, time.Now(), opts)
+
+	return &FileSystem{&reader{r}, dirs}, nil
+}
+
+func Open(name string, opts *Options) (*FileSystemCloser, error) {
+	rc, err := zip.OpenReader(name)
+	if err != nil {
+		return nil, err
+	}
 
 	fi, err := os.Stat(name)
 	if err != nil {
+		rc.Close()
+		return nil, err
+	}
+
+	dirs := newDirs(rc.File, fi.ModTime(), opts)
+	fs := FileSystem{&readCloser{rc}, dirs}
+
+	return &FileSystemCloser{fs, name, rc}, nil
+}
+
+func (fs *FileSystem) Open(name string) (file http.File, err error) {
+	name = strings.Trim(name, "/")
+	if name == "" {
+		name = "."
+	} else {
+		name = strings.ToLower(name)
+	}
+
+	d := fs.dirs[name]
+	if d != nil {
+		f := *d
+		return &f, nil
+	}
+
+	d = fs.dirs[filepath.Dir(name)]
+	if d == nil {
+		return nil, os.ErrNotExist
+	}
+
+	f := d.files[filepath.Base(name)]
+	if f == nil {
+		return nil, os.ErrNotExist
+	}
+
+	rc, err := f.Open()
+	if err != nil {
 		return
 	}
+
+	return &File{fi: f.FileInfo(), rc: rc}, nil
+}
+
+func (z *FileSystemCloser) Close() error {
+	return z.c.Close()
+}
+
+func newDirs(files []*zip.File, modTime time.Time, opts *Options) map[string]*File {
+	dirs := make(map[string]*File)
 
 	// opts
 	if opts == nil {
@@ -56,9 +119,9 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 	}
 
 	// root directory
-	dirs["."] = newDir(&FileInfo{name: "/", modTime: fi.ModTime()})
+	dirs["."] = newDir(&FileInfo{name: "/", modTime: modTime})
 
-	for _, f := range rc.File {
+	for _, f := range files {
 		fi := f.FileHeader.FileInfo()
 		org := strings.Trim(f.FileHeader.Name, "/")
 		fn := strings.ToLower(org)
@@ -99,45 +162,7 @@ func OpenFS(name string, opts *Options) (z *ZipFS, err error) {
 		d.addFile(fn, &ZipFile{f})
 	}
 
-	z = &ZipFS{Filename: name, rc: rc, dirs: dirs}
-
-	return
-}
-
-func (z *ZipFS) Open(name string) (file http.File, err error) {
-	name = strings.Trim(name, "/")
-	if name == "" {
-		name = "."
-	} else {
-		name = strings.ToLower(name)
-	}
-
-	d := z.dirs[name]
-	if d != nil {
-		f := *d
-		return &f, nil
-	}
-
-	d = z.dirs[filepath.Dir(name)]
-	if d == nil {
-		return nil, os.ErrNotExist
-	}
-
-	f := d.files[filepath.Base(name)]
-	if f == nil {
-		return nil, os.ErrNotExist
-	}
-
-	rc, err := f.Open()
-	if err != nil {
-		return
-	}
-
-	return &File{fi: f.FileInfo(), rc: rc}, nil
-}
-
-func (z *ZipFS) Close() error {
-	return z.rc.Close()
+	return dirs
 }
 
 func newDir(fi os.FileInfo) *File {

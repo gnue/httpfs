@@ -5,19 +5,19 @@ import (
 	"net/http"
 )
 
-type GitFS struct {
+type FileSystem struct {
 	Repo   *Repo
 	Branch string
 }
 
-func New(repo string, branch string) *GitFS {
+func New(repo string, branch string) *FileSystem {
 	if branch == "" {
 		branch = "master"
 	}
 
-	return &GitFS{&Repo{repo}, branch}
+	return &FileSystem{&Repo{repo}, branch}
 }
 
-func (g *GitFS) Open(name string) (http.File, error) {
+func (g *FileSystem) Open(name string) (http.File, error) {
 	return g.Repo.Open(name, g.Branch)
 }
