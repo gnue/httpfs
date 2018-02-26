@@ -6,15 +6,15 @@ import (
 	"os"
 )
 
-type UnionFS struct {
+type FileSystem struct {
 	fileSystems []http.FileSystem
 }
 
-func New(fileSystems ...http.FileSystem) *UnionFS {
-	return &UnionFS{fileSystems}
+func New(fileSystems ...http.FileSystem) *FileSystem {
+	return &FileSystem{fileSystems}
 }
 
-func (u *UnionFS) Open(name string) (http.File, error) {
+func (u *FileSystem) Open(name string) (http.File, error) {
 	var dirFSs []http.FileSystem
 
 	for _, fs := range u.fileSystems {
