@@ -9,21 +9,21 @@ import (
 
 type callbackFunc func(http.FileSystem, string) (http.File, error)
 
-type IndexFS struct {
+type FileSystem struct {
 	fileSystem http.FileSystem
 	callback   callbackFunc
 }
 
-func New(fs http.FileSystem, callback callbackFunc) *IndexFS {
+func New(fs http.FileSystem, callback callbackFunc) *FileSystem {
 	if callback == nil {
 		indexes := Indexes([]string{"index.html"})
 		callback = indexes.DirIndex
 	}
 
-	return &IndexFS{fileSystem: fs, callback: callback}
+	return &FileSystem{fileSystem: fs, callback: callback}
 }
 
-func (idx *IndexFS) Open(name string) (http.File, error) {
+func (idx *FileSystem) Open(name string) (http.File, error) {
 	fs := idx.fileSystem
 
 	file, err := fs.Open(name)
@@ -56,11 +56,11 @@ func (idx *IndexFS) Open(name string) (http.File, error) {
 	return idx.OpenIndex(name)
 }
 
-func (idx *IndexFS) OpenIndex(dir string) (http.File, error) {
+func (idx *FileSystem) OpenIndex(dir string) (http.File, error) {
 	return idx.callback(idx.fileSystem, dir)
 }
 
-func (idx *IndexFS) HasIndex(dir string) bool {
+func (idx *FileSystem) HasIndex(dir string) bool {
 	f, err := idx.OpenIndex(dir)
 	if err == nil {
 		f.Close()
