@@ -89,7 +89,7 @@ func newFileSystem(dirs []string) (http.FileSystem, error) {
 		switch filepath.Ext(d) {
 		case ".zip":
 			zipOpts := zipfs.Options{Prefix: prefix}
-			fs, err := zipfs.OpenFS(d, &zipOpts)
+			fs, err := zipfs.Open(d, &zipOpts)
 			if err != nil {
 				return nil, err
 			}
