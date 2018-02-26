@@ -18,19 +18,19 @@ type Engine interface {
 	Exts() []string
 }
 
-type TemplateFS struct {
+type FileSystem struct {
 	Engines      map[string]Engine
 	PageTemplete *template.Template
 	FileSystem   http.FileSystem
 	reExts       *regexp.Regexp
 }
 
-func New(fs http.FileSystem, layout *template.Template, engines ...Engine) *TemplateFS {
+func New(fs http.FileSystem, layout *template.Template, engines ...Engine) *FileSystem {
 	if layout == nil {
 		layout = defaultLayout
 	}
 
-	t := &TemplateFS{
+	t := &FileSystem{
 		FileSystem:   fs,
 		Engines:      make(map[string]Engine),
 		PageTemplete: layout,
@@ -45,7 +45,7 @@ func New(fs http.FileSystem, layout *template.Template, engines ...Engine) *Temp
 	return t
 }
 
-func (t *TemplateFS) Open(name string) (http.File, error) {
+func (t *FileSystem) Open(name string) (http.File, error) {
 	f, err := t.open(name)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (t *TemplateFS) Open(name string) (http.File, error) {
 	return f, nil
 }
 
-func (t *TemplateFS) open(name string) (http.File, error) {
+func (t *FileSystem) open(name string) (http.File, error) {
 	fs := t.FileSystem
 	f, err := fs.Open(name)
 	if err == nil {
@@ -96,7 +96,7 @@ func (t *TemplateFS) open(name string) (http.File, error) {
 	return nil, os.ErrNotExist
 }
 
-func (t *TemplateFS) RegEngine(e Engine, exts ...string) {
+func (t *FileSystem) RegEngine(e Engine, exts ...string) {
 	if exts == nil {
 		exts = e.Exts()
 	}
@@ -110,7 +110,7 @@ func (t *TemplateFS) RegEngine(e Engine, exts ...string) {
 	}
 }
 
-func (t *TemplateFS) FindEngine(name string) Engine {
+func (t *FileSystem) FindEngine(name string) Engine {
 	ext := filepath.Ext(name)
 	return t.Engines[ext]
 }
@@ -123,7 +123,7 @@ type data struct {
 	Body     string
 }
 
-func (t *TemplateFS) render(e Engine, b []byte, finfo os.FileInfo) ([]byte, error) {
+func (t *FileSystem) render(e Engine, b []byte, finfo os.FileInfo) ([]byte, error) {
 	output := e.Render(b)
 	output = t.postRender(output)
 
@@ -147,7 +147,7 @@ func (t *TemplateFS) render(e Engine, b []byte, finfo os.FileInfo) ([]byte, erro
 
 var reHref = regexp.MustCompile(`(?i)\shref="[^"]+"`)
 
-func (t *TemplateFS) postRender(b []byte) []byte {
+func (t *FileSystem) postRender(b []byte) []byte {
 	fn := func(b []byte) []byte {
 		sub := t.reExts.FindSubmatchIndex(b)
 		if sub == nil {
@@ -166,7 +166,7 @@ func (t *TemplateFS) postRender(b []byte) []byte {
 	return reHref.ReplaceAllFunc(b, fn)
 }
 
-func (t *TemplateFS) compileExts() {
+func (t *FileSystem) compileExts() {
 	exts := make([]string, 0, len(t.Engines))
 
 	for ext, _ := range t.Engines {
