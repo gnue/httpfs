@@ -3,6 +3,8 @@ package zipfs
 
 import (
 	"archive/zip"
+	"bytes"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,10 +14,15 @@ import (
 
 var OSX_Ignore = []string{"__MACOSX", ".DS_Store"}
 
-type ZipFS struct {
+type FileSystem struct {
+	r    Reader
+	dirs map[string]*File
+}
+
+type FileSystemCloser struct {
+	FileSystem
 	Filename string
-	rc       *zip.ReadCloser
-	dirs     map[string]*File
+	c        io.Closer
 }
 
 type Options struct {
@@ -23,7 +30,19 @@ type Options struct {
 	Ignore []string
 }
 
-func OpenFS(name string, opts *Options) (*ZipFS, error) {
+func New(data []byte, opts *Options) (*FileSystem, error) {
+	b := bytes.NewReader(data)
+	r, err := zip.NewReader(b, b.Size())
+	if err != nil {
+		return nil, err
+	}
+
+	dirs := newDirs(r.File, time.Now(), opts)
+
+	return &FileSystem{&reader{r}, dirs}, nil
+}
+
+func OpenFS(name string, opts *Options) (*FileSystemCloser, error) {
 	rc, err := zip.OpenReader(name)
 	if err != nil {
 		return nil, err
@@ -36,11 +55,12 @@ func OpenFS(name string, opts *Options) (*ZipFS, error) {
 	}
 
 	dirs := newDirs(rc.File, fi.ModTime(), opts)
+	fs := FileSystem{&readCloser{rc}, dirs}
 
-	return &ZipFS{Filename: name, rc: rc, dirs: dirs}, nil
+	return &FileSystemCloser{fs, name, rc}, nil
 }
 
-func (z *ZipFS) Open(name string) (file http.File, err error) {
+func (fs *FileSystem) Open(name string) (file http.File, err error) {
 	name = strings.Trim(name, "/")
 	if name == "" {
 		name = "."
@@ -48,13 +68,13 @@ func (z *ZipFS) Open(name string) (file http.File, err error) {
 		name = strings.ToLower(name)
 	}
 
-	d := z.dirs[name]
+	d := fs.dirs[name]
 	if d != nil {
 		f := *d
 		return &f, nil
 	}
 
-	d = z.dirs[filepath.Dir(name)]
+	d = fs.dirs[filepath.Dir(name)]
 	if d == nil {
 		return nil, os.ErrNotExist
 	}
@@ -72,8 +92,8 @@ func (z *ZipFS) Open(name string) (file http.File, err error) {
 	return &File{fi: f.FileInfo(), rc: rc}, nil
 }
 
-func (z *ZipFS) Close() error {
-	return z.rc.Close()
+func (z *FileSystemCloser) Close() error {
+	return z.c.Close()
 }
 
 func newDirs(files []*zip.File, modTime time.Time, opts *Options) map[string]*File {
