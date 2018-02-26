@@ -42,7 +42,7 @@ func New(data []byte, opts *Options) (*FileSystem, error) {
 	return &FileSystem{&reader{r}, dirs}, nil
 }
 
-func OpenFS(name string, opts *Options) (*FileSystemCloser, error) {
+func Open(name string, opts *Options) (*FileSystemCloser, error) {
 	rc, err := zip.OpenReader(name)
 	if err != nil {
 		return nil, err

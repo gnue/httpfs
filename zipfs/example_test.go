@@ -8,8 +8,8 @@ import (
 )
 
 // Simple zip webserver
-func ExampleZipFS() {
-	fs, err := zipfs.OpenFS("public.zip", &zipfs.Options{Prefix: "public"})
+func ExampleOpen() {
+	fs, err := zipfs.Open("public.zip", &zipfs.Options{Prefix: "public"})
 	if err != nil {
 		log.Fatal(err)
 	}
