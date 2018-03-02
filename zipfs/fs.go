@@ -173,10 +173,10 @@ func mkpath(dirs map[string]*Dinfo, fn string, t time.Time) {
 		dn += strings.ToLower(d)
 
 		if dirs[dn] == nil {
-			fi := &DirInfo{name: d, modTime: t}
-			dirs[dn] = newDir(fi)
+			dir := newDir(&DirInfo{name: d, modTime: t})
+			dirs[dn] = dir
 			if parent != nil {
-				parent.addFile(dn, &ZipDir{fi})
+				parent.addFile(dn, dir)
 			}
 		}
 
