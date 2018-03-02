@@ -16,7 +16,7 @@ var OSX_Ignore = []string{"__MACOSX", ".DS_Store"}
 
 type FileSystem struct {
 	r    Reader
-	dirs map[string]*File
+	dirs map[string]*Dinfo
 }
 
 type FileSystemCloser struct {
@@ -28,6 +28,11 @@ type FileSystemCloser struct {
 type Options struct {
 	Prefix string
 	Ignore []string
+}
+
+type Finfo interface {
+	FileInfo() os.FileInfo
+	Open() (http.File, error)
 }
 
 func New(data []byte, opts *Options) (*FileSystem, error) {
@@ -70,8 +75,7 @@ func (fs *FileSystem) Open(name string) (file http.File, err error) {
 
 	d := fs.dirs[name]
 	if d != nil {
-		f := *d
-		return &f, nil
+		return d.Open()
 	}
 
 	d = fs.dirs[filepath.Dir(name)]
@@ -84,20 +88,15 @@ func (fs *FileSystem) Open(name string) (file http.File, err error) {
 		return nil, os.ErrNotExist
 	}
 
-	rc, err := f.Open()
-	if err != nil {
-		return
-	}
-
-	return &File{fi: f.FileInfo(), rc: rc}, nil
+	return f.Open()
 }
 
 func (z *FileSystemCloser) Close() error {
 	return z.c.Close()
 }
 
-func newDirs(files []*zip.File, modTime time.Time, opts *Options) map[string]*File {
-	dirs := make(map[string]*File)
+func newDirs(files []*zip.File, modTime time.Time, opts *Options) map[string]*Dinfo {
+	dirs := make(map[string]*Dinfo)
 
 	// opts
 	if opts == nil {
@@ -165,11 +164,7 @@ func newDirs(files []*zip.File, modTime time.Time, opts *Options) map[string]*Fi
 	return dirs
 }
 
-func newDir(fi os.FileInfo) *File {
-	return &File{fi: fi, files: make(map[string]Finfo, 0)}
-}
-
-func mkpath(dirs map[string]*File, fn string, t time.Time) {
+func mkpath(dirs map[string]*Dinfo, fn string, t time.Time) {
 	subdir := strings.Split(fn, "/")
 	parent := dirs["."]
 	dn := ""

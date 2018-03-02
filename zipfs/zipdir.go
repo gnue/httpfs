@@ -1,7 +1,7 @@
 package zipfs
 
 import (
-	"io"
+	"net/http"
 	"os"
 )
 
@@ -13,6 +13,6 @@ func (z *ZipDir) FileInfo() os.FileInfo {
 	return z.finfo
 }
 
-func (z *ZipDir) Open() (io.ReadCloser, error) {
+func (z *ZipDir) Open() (http.File, error) {
 	return nil, nil
 }
