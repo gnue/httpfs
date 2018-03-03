@@ -119,7 +119,7 @@ func newDirs(files []*zip.File, modTime time.Time, opts *Options) map[string]*Fi
 	}
 
 	// root directory
-	dirs["."] = newDir(&FileInfo{name: "/", modTime: modTime})
+	dirs["."] = newDir(&DirInfo{name: "/", modTime: modTime})
 
 	for _, f := range files {
 		fi := f.FileHeader.FileInfo()
@@ -178,7 +178,7 @@ func mkpath(dirs map[string]*File, fn string, t time.Time) {
 		dn += strings.ToLower(d)
 
 		if dirs[dn] == nil {
-			fi := &FileInfo{name: d, modTime: t}
+			fi := &DirInfo{name: d, modTime: t}
 			dirs[dn] = newDir(fi)
 			if parent != nil {
 				parent.addFile(dn, &ZipDir{fi})
