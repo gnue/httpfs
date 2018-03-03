@@ -8,11 +8,6 @@ import (
 	"path/filepath"
 )
 
-type Finfo interface {
-	FileInfo() os.FileInfo
-	Open() (io.ReadCloser, error)
-}
-
 type File struct {
 	fi     os.FileInfo
 	rc     io.ReadCloser
@@ -51,30 +46,7 @@ func (f *File) Read(p []byte) (int, error) {
 }
 
 func (f *File) Readdir(count int) (finfos []os.FileInfo, err error) {
-	finfos, err = f.readdir()
-	if err != nil {
-		return
-	}
-
-	if count < 0 {
-		return finfos, nil
-	}
-
-	size := int64(len(f.files))
-
-	if size <= f.offset {
-		return finfos, io.EOF
-	}
-
-	next := f.offset + int64(count)
-	if size < next {
-		next = size
-	}
-
-	finfos = finfos[f.offset:next]
-	f.offset += next
-
-	return finfos, nil
+	return nil, os.ErrNotExist
 }
 
 func (f *File) Seek(offset int64, whence int) (int64, error) {
@@ -88,28 +60,6 @@ func (f *File) Seek(offset int64, whence int) (int64, error) {
 
 func (f *File) Stat() (os.FileInfo, error) {
 	return f.fi, nil
-}
-
-func (f *File) readdir() ([]os.FileInfo, error) {
-	if f.fi.IsDir() && f.files != nil {
-		size := int64(len(f.files))
-
-		if f.cache.finfos == nil {
-			f.cache.finfos = make([]os.FileInfo, 0, size)
-
-			for _, fname := range f.fnames {
-				fi := f.files[fname]
-				if fi == nil {
-					continue
-				}
-				f.cache.finfos = append(f.cache.finfos, fi.FileInfo())
-			}
-		}
-
-		return f.cache.finfos, nil
-	}
-
-	return nil, os.ErrNotExist
 }
 
 func (f *File) newReader() (*bytes.Reader, error) {
