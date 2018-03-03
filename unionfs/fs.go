@@ -63,7 +63,7 @@ func (u *FileSystem) Open(name string) (http.File, error) {
 			}
 
 			if dir == nil {
-				dir = &Dir{fi: &FileInfo{name: fi.Name(), modTime: fi.ModTime()}}
+				dir = &Dir{fi: &DirInfo{name: fi.Name(), modTime: fi.ModTime()}}
 			}
 
 			dir.addFile(files...)
