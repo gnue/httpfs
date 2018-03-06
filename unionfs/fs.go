@@ -42,7 +42,7 @@ func (u *FileSystem) Open(name string) (http.File, error) {
 	}
 
 	if dirFSs != nil {
-		var dir *Dir
+		var dir *Dinfo
 
 		for _, fs := range dirFSs {
 			file, err := fs.Open(name)
@@ -63,14 +63,14 @@ func (u *FileSystem) Open(name string) (http.File, error) {
 			}
 
 			if dir == nil {
-				dir = &Dir{fi: &FileInfo{name: fi.Name(), modTime: fi.ModTime()}}
+				dir = newDir(fi.Name(), fi.ModTime())
 			}
 
 			dir.addFile(files...)
 		}
 
 		if dir != nil {
-			return dir, nil
+			return dir.Open()
 		}
 	}
 
