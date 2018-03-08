@@ -20,7 +20,7 @@ func (obj *Object) Size() (int64, error) {
 		return 0, err
 	}
 
-	s := strings.TrimRight(string(b), "\r\n")
+	s := strings.TrimSpace(string(b))
 
 	return strconv.ParseInt(s, 10, 64)
 }
@@ -31,7 +31,7 @@ func (obj *Object) Type() (string, error) {
 		return "", err
 	}
 
-	s := strings.TrimRight(string(b), "\r\n")
+	s := strings.TrimSpace(string(b))
 
 	return s, nil
 }
