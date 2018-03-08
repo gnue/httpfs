@@ -3,6 +3,7 @@ package templatefs_test
 import (
 	"net/http"
 	"strings"
+	"unicode"
 
 	"github.com/gnue/httpfs/templatefs"
 	"github.com/gnue/httpfs/templatefs/engines/markdown"
@@ -34,7 +35,7 @@ func ExampleTemplateFS_custom_layout() {
 </html>
 `
 
-	layout, err := templatefs.NewLayout(strings.TrimLeft(s, "\r\n"))
+	layout, err := templatefs.NewLayout(strings.TrimLeftFunc(s, unicode.IsSpace))
 	if err != nil {
 		return
 	}

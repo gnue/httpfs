@@ -3,9 +3,10 @@ package templatefs
 import (
 	"html/template"
 	"strings"
+	"unicode"
 )
 
-var defaultLayout = template.Must(NewLayout(strings.TrimLeft(pageTemplate, "\r\n")))
+var defaultLayout = template.Must(NewLayout(strings.TrimLeftFunc(pageTemplate, unicode.IsSpace)))
 
 func NewLayout(s string) (*template.Template, error) {
 	funcMap := template.FuncMap{
