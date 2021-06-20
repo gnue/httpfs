@@ -23,13 +23,13 @@ package main
 
 import (
 	"github.com/gnue/httpfs/zipfs"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
-	b, err := ioutil.ReadFile("public.zip")
+	b, err := os.ReadFile("public.zip")
 	if err != nil {
 		log.Fatal(err)
 	}
