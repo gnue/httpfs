@@ -48,6 +48,7 @@ import (
 	"github.com/gnue/httpfs/templatefs/engines/markdown"
 	"net/http"
 	"strings"
+	"unicode"
 )
 
 func main() {
@@ -67,7 +68,7 @@ func main() {
 </html>
 `
 
-	layout, err := templatefs.NewLayout(strings.TrimLeft(s, "\r\n"))
+	layout, err := templatefs.NewLayout(strings.TrimLeftFunc(s, unicode.IsSpace))
 	if err != nil {
 		return
 	}

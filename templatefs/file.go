@@ -2,7 +2,7 @@ package templatefs
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 )
@@ -40,7 +40,7 @@ func (f *File) newReader() (*bytes.Reader, error) {
 		return nil, os.ErrInvalid
 	}
 
-	b, err := ioutil.ReadAll(f.file)
+	b, err := io.ReadAll(f.file)
 	if err != nil {
 		return nil, err
 	}

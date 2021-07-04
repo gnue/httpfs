@@ -38,7 +38,7 @@ func (repo *Repo) Stat(fname string, treeish string) (*FileInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		object := strings.TrimRight(string(b), "\r\n")
+		object := strings.TrimSpace(string(b))
 		return &FileInfo{mode: "040000", objtype: "tree", object: object, path: "/"}, nil
 	}
 
@@ -48,7 +48,7 @@ func (repo *Repo) Stat(fname string, treeish string) (*FileInfo, error) {
 		return nil, err
 	}
 
-	s := strings.TrimRight(string(b), "\r\n")
+	s := strings.TrimSpace(string(b))
 	finfo, err := parseInfo(s)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (repo *Repo) modTime(fname string, treeish string) (t time.Time, err error)
 		return
 	}
 
-	s := strings.TrimRight(string(b), "\r\n")
+	s := strings.TrimSpace(string(b))
 	return time.Parse(TIME_ISO, s)
 }
 

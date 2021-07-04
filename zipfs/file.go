@@ -3,7 +3,6 @@ package zipfs
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -72,7 +71,7 @@ func (f *File) newReader() (*bytes.Reader, error) {
 			return nil, os.ErrInvalid
 		}
 
-		b, err := ioutil.ReadAll(f.rc)
+		b, err := io.ReadAll(f.rc)
 		if err != nil {
 			return nil, err
 		}
